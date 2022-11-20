@@ -1,5 +1,6 @@
 import * as cdk from 'aws-cdk-lib';
 import { RemovalPolicy } from 'aws-cdk-lib';
+import { LambdaRestApi } from 'aws-cdk-lib/aws-apigateway';
 import { AttributeType, BillingMode, Table } from 'aws-cdk-lib/aws-dynamodb';
 import { Runtime } from 'aws-cdk-lib/aws-lambda';
 import { NodejsFunction, NodejsFunctionProps } from 'aws-cdk-lib/aws-lambda-nodejs';
@@ -42,7 +43,7 @@ export class AwsMicroservicesStack extends cdk.Stack {
     ///////////////////////////////////////////////////////////////////////////
     // PRODUCT FUNCTION
     ///////////////////////////////////////////////////////////////////////////
-    const productFuntion = new NodejsFunction(this, 'productLambdaFunction', {
+    const productFunction = new NodejsFunction(this, 'productLambdaFunction', {
       entry: join(__dirname, '/../src/product/index.js'),
       ...nodeJsFunctionProps,
     });
@@ -50,6 +51,32 @@ export class AwsMicroservicesStack extends cdk.Stack {
     ///////////////////////////////////////////////////////////////////////////
     // GRANT READ-WRITE PRIVELEGES TO PRODUCT FUNCTION
     ///////////////////////////////////////////////////////////////////////////
-    productTable.grantReadWriteData(productFuntion);
+    productTable.grantReadWriteData(productFunction);
+
+    ///////////////////////////////////////////////////////////////////////////
+    // PRODUCT API GATEWAY
+    ///////////////////////////////////////////////////////////////////////////
+    const productApi = new LambdaRestApi(this, "productApi", {
+      restApiName: "Product Service",
+      handler: productFunction,
+      proxy: false
+    });
+
+    // ROOT NAME: product
+    const productResource = productApi.root.addResource("product");
+    // GET /product
+    productResource.addMethod("GET");
+    // POST /product
+    productResource.addMethod("POST");
+    
+    // /product/{id}
+    const productUsingId = productResource.addResource("{id}");
+    // GET /product/{id}
+    productUsingId.addMethod("GET");
+    // PUT /product/{id}
+    productUsingId.addMethod("PUT");
+    // DELETE /product/{id}
+    productUsingId.addMethod("DELETE");
+
   }
 }
