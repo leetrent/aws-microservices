@@ -1,6 +1,7 @@
-import { GetItemCommand, ScanCommand } from "@aws-sdk/client-dynamodb";
+import { GetItemCommand, ScanCommand, PutItemCommand } from "@aws-sdk/client-dynamodb";
 import { marshall, unmarshall } from "@aws-sdk/util-dynamodb";
 import {ddbClient} from "./ddbClient";
+import {v4 as uuidv4} from 'uuid';
 
 exports.handler = async function(event) {
     console.log("event", event);
@@ -18,6 +19,12 @@ exports.handler = async function(event) {
             } else {
                 body = await getAllProducts();
             }
+            break;
+        case "POST":
+            body = await createProduct(event);
+            break;
+        default:
+            throw new Error(`Unsupported route: ${event.httpMethod}`);
     }
 
     return {
@@ -63,6 +70,37 @@ const getAllProducts = async() => {
         console.log("[getProduct] => (Items):", Items);
 
         return (Items) ? Items.map( (item) => unmarshall(item) ) : {};
+
+    } catch (error) {
+        console.error(error)
+        throw error;
+    }
+}
+
+const createProduct = async(event) => {
+    console.log("[createProduct] => (event):", event);
+    console.log("[createProduct] => (process.env.DYNAMODB_TABLE_NAME):", process.env.DYNAMODB_TABLE_NAME);
+
+    try {
+        console.log("[createProduct] => (event.body):", event.body);
+        const productRequest = JSON.parse(event.body);
+        console.log("[createProduct] => (productRequest):", productRequest);
+
+        const productId = uuidv4();
+        console.log("[createProduct] => (productId):", productId);
+        productRequest.id = productId;
+        console.log("[createProduct] => (productRequest.id):", productRequest.id );
+
+        const params = {
+            TableName: process.env.DYNAMODB_TABLE_NAME,
+            Item: marshall( productRequest || {} )
+        }
+        console.log("[createProduct] => (params):", params);
+
+        const createResult = await ddbClient.send(new PutItemCommand(params));
+        console.log("[createProduct] => (createResult):", createResult);
+
+        return createResult;
 
     } catch (error) {
         console.error(error)
