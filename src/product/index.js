@@ -1,4 +1,4 @@
-import { GetItemCommand } from "@aws-sdk/client-dynamodb";
+import { GetItemCommand, ScanCommand } from "@aws-sdk/client-dynamodb";
 import { marshall, unmarshall } from "@aws-sdk/util-dynamodb";
 import {ddbClient} from "./ddbClient";
 
@@ -44,6 +44,26 @@ const getProduct = async(productId) => {
         return {Item} ? unmarshall(Item) : {};
 
         
+    } catch (error) {
+        console.error(error)
+        throw error;
+    }
+}
+
+const getAllProducts = async() => {
+    console.log("[getAllProducts] => (process.env.DYNAMODB_TABLE_NAME):", process.env.DYNAMODB_TABLE_NAME);
+
+    try {
+        const params = {
+            TableName: process.env.DYNAMODB_TABLE_NAME
+        }
+        console.log("[getAllProducts] => (params):", params);
+
+        const { Items } = await ddbClient.send(new ScanCommand(params));
+        console.log("[getProduct] => (Items):", Items);
+
+        return (Items) ? Items.map( (item) => unmarshall(item) ) : {};
+
     } catch (error) {
         console.error(error)
         throw error;
