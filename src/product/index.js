@@ -1,4 +1,4 @@
-import { GetItemCommand, ScanCommand, PutItemCommand, DeleteItemCommand } from "@aws-sdk/client-dynamodb";
+import { GetItemCommand, ScanCommand, PutItemCommand, DeleteItemCommand, UpdateItemCommand } from "@aws-sdk/client-dynamodb";
 import { marshall, unmarshall } from "@aws-sdk/util-dynamodb";
 import {ddbClient} from "./ddbClient";
 import {v4 as uuidv4} from 'uuid';
@@ -25,6 +25,9 @@ exports.handler = async function(event) {
             break;
         case "DELETE":
             body = await deleteProduct(event.pathParameters.id);
+            break;
+        case "PUT":
+            body = await updateProduct(event);
             break;
         default:
             throw new Error(`Unsupported route: ${event.httpMethod}`);
@@ -130,5 +133,38 @@ const deleteProduct = async(productId) => {
     } catch (error) {
         console.error(error)
         throw error;
+    }
+}
+
+const updateProduct = async(event) => {
+    console.log("[updateProduct] => (productId):", productId);
+    console.log("[updateProduct] => (process.env.DYNAMODB_TABLE_NAME):", process.env.DYNAMODB_TABLE_NAME); 
+
+    try {
+        const requestBody = JSON.parse(event.body);
+        const objKeys = Object.keys(requestBody);
+        console.log("[updateProduct] => (objKeys):", objKeys);
+
+        const params = {
+            TableName: process.env.DYNAMODB_TABLE_NAME,
+            Key: marshall({ id: event.pathParameters.id }),
+            UpdateExpression: `SET ${objKeys.map((_, index) => `#key${index} = :value${index}`).join(", ")}`,
+            ExpressionAttributeNames: objKeys.reduce((acc, key, index) => ({
+                ...acc,
+                [`#key${index}`]: key,
+            }), {}),
+            ExpressionAttributeValues: marshall(objKeys.reduce((acc, key, index) => ({
+                ...acc,
+                [`:value${index}`]: requestBody[key],
+            }), {})),
+          };
+
+          const updateResult = await ddbClient.send(new UpdateItemCommand(params));
+          console.log("[updateProduct] => (updateResult):", updateResult);
+
+          return updateResult;
+    } catch (error) {
+        console.error(error)
+        throw error;       
     }
 }
