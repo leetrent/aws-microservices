@@ -4,43 +4,54 @@ import {ddbClient} from "./ddbClient";
 import {v4 as uuidv4} from 'uuid';
 
 exports.handler = async function(event) {
-    console.log("event", event);
-    console.log("request", JSON.stringify( event, undefined, 2));
+    console.log("[productMicroservice] => (event):", event);
+    console.log("[productMicroservice] => (request):", JSON.stringify( event, undefined, 2));
+    console.log("[productMicroservice] => (event.httpMethod):", event.httpMethod);
+    console.log("[productMicroservice] => (event.pathParameters):", event.pathParameters);
 
-    // TODO - Implement switch on event.httpmethod to perform CRUD operations using ddbClient
-
-    console.log("event.httpMethod", event.httpMethod);
-    console.log("event.pathParameters", event.pathParameters);
-
-    switch (event.httpMethod) {
-        case "GET":
-            if (event.queryStringParameters != null) {
-                body = await getProductsByCategory(event);
-            }
-            else if (event.pathParameters != null) {
-                body = await getProduct(event.pathParameters.id);
-            } else {
-                body = await getAllProducts();
-            }
-            break;
-        case "POST":
-            body = await createProduct(event);
-            break;
-        case "DELETE":
-            body = await deleteProduct(event.pathParameters.id);
-            break;
-        case "PUT":
-            body = await updateProduct(event);
-            break;
-        default:
-            throw new Error(`Unsupported route: ${event.httpMethod}`);
+    try {
+        switch (event.httpMethod) {
+            case "GET":
+                if (event.queryStringParameters != null) {
+                    body = await getProductsByCategory(event);
+                }
+                else if (event.pathParameters != null) {
+                    body = await getProduct(event.pathParameters.id);
+                } else {
+                    body = await getAllProducts();
+                }
+                break;
+            case "POST":
+                body = await createProduct(event);
+                break;
+            case "DELETE":
+                body = await deleteProduct(event.pathParameters.id);
+                break;
+            case "PUT":
+                body = await updateProduct(event);
+                break;
+            default:
+                throw new Error(`Unsupported route: ${event.httpMethod}`);
+        }  
+        console.log("[productMicroservice] => (body):", body);  
+        return {
+            statusCode: 200,
+            body: JSON.stringify({
+                message: `Successfully completed ${event.httpMethod} operaton.`,
+                body: body
+            })
+        }   
+    } catch (exc) {
+        console.log("[productMicroservice] => (exception):", exc);
+        return {
+            statusCode: 500,
+            body: JSON.stringify({
+                message: "Failed to perform operation in product microservice",
+                errorMessage: exc.message,
+                errorStack: event.stack
+            })
+        };
     }
-
-    return {
-        statusCode: 200,
-        headers: {"Content-Type": "text/plain"},
-        body: `Hello from Product! You've hit ${event.path}\n`
-    };
 };
 
 const getProduct = async(productId) => {
