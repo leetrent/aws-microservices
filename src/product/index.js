@@ -1,4 +1,4 @@
-import { GetItemCommand, ScanCommand, PutItemCommand, DeleteItemCommand, UpdateItemCommand } from "@aws-sdk/client-dynamodb";
+import { GetItemCommand, ScanCommand, PutItemCommand, DeleteItemCommand, UpdateItemCommand, QueryCommand } from "@aws-sdk/client-dynamodb";
 import { marshall, unmarshall } from "@aws-sdk/util-dynamodb";
 import {ddbClient} from "./ddbClient";
 import {v4 as uuidv4} from 'uuid';
@@ -14,7 +14,10 @@ exports.handler = async function(event) {
 
     switch (event.httpMethod) {
         case "GET":
-            if (event.pathParameters != null) {
+            if (event.queryStringParameters != null) {
+                body = await getProductsByCategory(event);
+            }
+            else if (event.pathParameters != null) {
                 body = await getProduct(event.pathParameters.id);
             } else {
                 body = await getAllProducts();
@@ -166,5 +169,35 @@ const updateProduct = async(event) => {
     } catch (error) {
         console.error(error)
         throw error;       
+    }
+}
+
+const getProductsByCategory = async(event) => {
+    console.log("[getProductsByCategory] => (process.env.DYNAMODB_TABLE_NAME):", process.env.DYNAMODB_TABLE_NAME); 
+
+    try {
+        const productId = event.pathParameters.id;
+        const category = event.queryStringParameters.category;
+        console.log("[getProductsByCategory] => (productId):", productId); 
+        console.log("[getProductsByCategory] => (category):", category); 
+
+        const params = {
+            KeyConditionExpression: "id= :productId",
+            FilterExpression: "contains (category, :category)",
+            ExpressionAttributeValues: {
+                ":productId": { $: productId },
+                ":category":  { $: category  }
+            },
+            TableName: process.env.DYNAMODB_TABLE_NAME
+        };
+
+        const { Items } = await ddbClient.send(new QueryCommand(params));
+        console.log("[getProductsByCategory] => (Items):", Items);
+
+        return (Items) ? Items.map( (item) => unmarshall(item) ) : {};
+
+    } catch (error) {
+        console.error(error)
+        throw error;          
     }
 }
