@@ -9,6 +9,7 @@ exports.handler = async function(event) {
     console.log("[productMicroservice] => (event.httpMethod):", event.httpMethod);
     console.log("[productMicroservice] => (event.pathParameters):", event.pathParameters);
 
+    let body = null;
     try {
         switch (event.httpMethod) {
             case "GET":
