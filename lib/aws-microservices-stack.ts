@@ -6,6 +6,7 @@ import { Runtime } from 'aws-cdk-lib/aws-lambda';
 import { NodejsFunction, NodejsFunctionProps } from 'aws-cdk-lib/aws-lambda-nodejs';
 import { Construct } from 'constructs';
 import { join } from 'path';
+import { SwnDatabase } from './database';
 
 export class AwsMicroservicesStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -13,18 +14,20 @@ export class AwsMicroservicesStack extends cdk.Stack {
 
     console.log('__dirname', __dirname);
 
+    const database = new SwnDatabase(this, "Database");
+
     /////////////////////////////////////////////////
     // PRODUCT TABLE
     /////////////////////////////////////////////////
-    const productTable = new Table(this, 'product', {
-      partitionKey: {
-        name: 'id',
-        type: AttributeType.STRING 
-      },
-      tableName: 'product',
-      removalPolicy: RemovalPolicy.DESTROY,
-      billingMode: BillingMode.PAY_PER_REQUEST
-    });
+    // const productTable = new Table(this, 'product', {
+    //   partitionKey: {
+    //     name: 'id',
+    //     type: AttributeType.STRING 
+    //   },
+    //   tableName: 'product',
+    //   removalPolicy: RemovalPolicy.DESTROY,
+    //   billingMode: BillingMode.PAY_PER_REQUEST
+    // });
 
     //////////////////////////////////////////////////
     // PRODUCT FUNCTION PROPERTIES
@@ -35,7 +38,7 @@ export class AwsMicroservicesStack extends cdk.Stack {
       },
       environment: {
         PRIMARY_KEY: 'id',
-        DYNAMODB_TABLE_NAME: productTable.tableName
+        DYNAMODB_TABLE_NAME: database.productTable.tableName
       },
       runtime: Runtime.NODEJS_16_X
     }
@@ -51,7 +54,7 @@ export class AwsMicroservicesStack extends cdk.Stack {
     ///////////////////////////////////////////////////////////////////////////
     // GRANT READ-WRITE PRIVELEGES TO PRODUCT FUNCTION
     ///////////////////////////////////////////////////////////////////////////
-    productTable.grantReadWriteData(productFunction);
+    database.productTable.grantReadWriteData(productFunction);
 
     ///////////////////////////////////////////////////////////////////////////
     // PRODUCT API GATEWAY
