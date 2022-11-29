@@ -152,7 +152,7 @@ const deleteProduct = async(productId) => {
 }
 
 const updateProduct = async(event) => {
-    console.log("[updateProduct] => (productId):", productId);
+    console.log("[updateProduct] => (productId):", event.pathParameters.id);
     console.log("[updateProduct] => (process.env.DYNAMODB_TABLE_NAME):", process.env.DYNAMODB_TABLE_NAME); 
 
     try {
