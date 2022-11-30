@@ -7,6 +7,7 @@ import { NodejsFunction, NodejsFunctionProps } from 'aws-cdk-lib/aws-lambda-node
 import { Construct } from 'constructs';
 import { join } from 'path';
 import { SwnDatabase } from './database';
+import { SwnMicroservices } from './microservice';
 
 export class AwsMicroservicesStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -15,6 +16,9 @@ export class AwsMicroservicesStack extends cdk.Stack {
     console.log('__dirname', __dirname);
 
     const database = new SwnDatabase(this, "Database");
+    const microservices = new SwnMicroservices(this, "Microservices", {
+      productTable: database.productTable
+    });
 
     /////////////////////////////////////////////////
     // PRODUCT TABLE
@@ -32,36 +36,36 @@ export class AwsMicroservicesStack extends cdk.Stack {
     //////////////////////////////////////////////////
     // PRODUCT FUNCTION PROPERTIES
     //////////////////////////////////////////////////
-    const nodeJsFunctionProps: NodejsFunctionProps = {
-      bundling: {
-        externalModules: ['aws-sdk']
-      },
-      environment: {
-        PRIMARY_KEY: 'id',
-        DYNAMODB_TABLE_NAME: database.productTable.tableName
-      },
-      runtime: Runtime.NODEJS_16_X
-    }
+    // const nodeJsFunctionProps: NodejsFunctionProps = {
+    //   bundling: {
+    //     externalModules: ['aws-sdk']
+    //   },
+    //   environment: {
+    //     PRIMARY_KEY: 'id',
+    //     DYNAMODB_TABLE_NAME: database.productTable.tableName
+    //   },
+    //   runtime: Runtime.NODEJS_16_X
+    // }
 
     ///////////////////////////////////////////////////////////////////////////
     // PRODUCT FUNCTION
     ///////////////////////////////////////////////////////////////////////////
-    const productFunction = new NodejsFunction(this, 'productLambdaFunction', {
-      entry: join(__dirname, '/../src/product/index.js'),
-      ...nodeJsFunctionProps,
-    });
+    // const productFunction = new NodejsFunction(this, 'productLambdaFunction', {
+    //   entry: join(__dirname, '/../src/product/index.js'),
+    //   ...nodeJsFunctionProps,
+    // });
 
     ///////////////////////////////////////////////////////////////////////////
     // GRANT READ-WRITE PRIVELEGES TO PRODUCT FUNCTION
     ///////////////////////////////////////////////////////////////////////////
-    database.productTable.grantReadWriteData(productFunction);
+    // database.productTable.grantReadWriteData(productFunction);
 
     ///////////////////////////////////////////////////////////////////////////
     // PRODUCT API GATEWAY
     ///////////////////////////////////////////////////////////////////////////
     const productApi = new LambdaRestApi(this, "productApi", {
       restApiName: "Product Service",
-      handler: productFunction,
+      handler: microservices.productMicroservice,
       proxy: false
     });
 
