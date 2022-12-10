@@ -10,10 +10,12 @@ export class SwnDatabase extends Construct {
     constructor(scope: Construct, id: string) {
         super(scope, id);
 
-        /////////////////////////////////////////////////
-        // PRODUCT TABLE
-        /////////////////////////////////////////////////
-        const productTable = new Table(this, 'product', {
+        this.productTable = this.createProductTable();
+        this.basketTable = this.createBasketTable();
+    }
+
+    private createProductTable() : ITable {
+        return new Table(this, 'product', {
             partitionKey: {
             name: 'id',
             type: AttributeType.STRING 
@@ -22,12 +24,10 @@ export class SwnDatabase extends Construct {
             removalPolicy: RemovalPolicy.DESTROY,
             billingMode: BillingMode.PAY_PER_REQUEST
         });
-        this.productTable = productTable;
+    }
 
-        /////////////////////////////////////////////////
-        // BASKET TABLE
-        /////////////////////////////////////////////////
-        const basketTable = new Table(this, 'basket', {
+    private createBasketTable() : ITable {
+        return new Table(this, 'basket', {
             partitionKey: {
                 name: 'userName',
                 type: AttributeType.STRING,
@@ -36,7 +36,5 @@ export class SwnDatabase extends Construct {
             removalPolicy: RemovalPolicy.DESTROY,
             billingMode: BillingMode.PAY_PER_REQUEST
         });
-        this.basketTable = basketTable;
     }
-
 }
