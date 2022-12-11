@@ -71,7 +71,7 @@ export class SwnMicroservices extends Construct {
         // BASKET FUNCTION
         ///////////////////////////////////////////////////////////////////////////
         const basketFunction = new NodejsFunction(this, 'baskettLambdaFunction', {
-            entry: join(__dirname, '/../src/baskett/index.js'),
+            entry: join(__dirname, '/../src/basket/index.js'),
             ...basketFunctionProps,
         });
 
