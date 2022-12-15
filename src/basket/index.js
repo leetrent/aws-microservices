@@ -8,7 +8,9 @@
 // npm install @aws-sdk/client-dynamodb
 // npm install @aws-sdk/util-dynamodb
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
+import { GetItemCommand, ScanCommand, PutItemCommand, DeleteItemCommand } from "@aws-sdk/client-dynamodb";
+import { marshall, unmarshall } from "@aws-sdk/util-dynamodb";
+import {ddbClient} from "./ddbClient";
 
 exports.handler = async function(event) {
     console.log("[basketMicroservice] => (event):", event);
@@ -123,6 +125,28 @@ const createBasket = async(event) => {
 
     } catch (error) {
 		console.log("[basketMicroservice][createBasket] => (error):", error);
+        throw error;
+    }
+}
+
+const deleteBasket = async(userName) => {
+    console.log("[basketMicroservice][deleteBasket] => (userName):", userName);
+    console.log("[basketMicroservice][deleteBasket] => (process.env.DYNAMODB_TABLE_NAME):", process.env.DYNAMODB_TABLE_NAME);  
+
+    try {
+        const params = {
+            TableName: process.env.DYNAMODB_TABLE_NAME,
+            Key: marshall( { userName: userName } )
+        }
+        console.log("[basketMicroservice][deleteBasket] => (params):", params);
+
+        const deleteResult = await ddbClient.send(new DeleteItemCommand(params));
+        console.log("[basketMicroservice][deleteBasket] => (deleteResult):", deleteResult);
+
+        return deleteResult;
+
+    } catch (error) {
+		console.log("[basketMicroservice][deleteBasket] => (error):", error);
         throw error;
     }
 }
