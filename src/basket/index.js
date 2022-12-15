@@ -58,4 +58,71 @@ exports.handler = async function(event) {
             })
         };
     }
+};
+
+const getAllBaskets = async() => {
+    console.log("[basketMicroservice][getAllBaskets] => (process.env.DYNAMODB_TABLE_NAME):", process.env.DYNAMODB_TABLE_NAME);
+
+    try {
+        const params = {
+            TableName: process.env.DYNAMODB_TABLE_NAME
+        }
+        console.log("[basketMicroservice][getAllBaskets] => (params):", params);
+
+        const { Items } = await ddbClient.send(new ScanCommand(params));
+        console.log("[basketMicroservice][getAllBaskets] => (Items):", Items);
+
+        return (Items) ? Items.map( (item) => unmarshall(item) ) : {};
+
+    } catch (error) {
+        console.log("[basketMicroservice][getAllBaskets] => (error):", error);
+        throw error;
+    }
+}
+
+const getBasket = async(userName) => {
+    console.log("[basketMicroservice][getBasket] => (userName):", userName);
+    console.log("[basketMicroservice][getBasket] => (process.env.DYNAMODB_TABLE_NAME):", process.env.DYNAMODB_TABLE_NAME);
+
+    try {
+        const params = {
+            TableName: process.env.DYNAMODB_TABLE_NAME,
+            Key: marshall( { userName: userName } )
+        }
+        console.log("[basketMicroservice][getBasket] => (params):", params);
+
+        const { Item } = await ddbClient.send(new GetItemCommand(params));
+        console.log("[basketMicroservice][getBasket] => (Item):", Item);
+
+        return {Item} ? unmarshall(Item) : {};       
+    } catch (error) {
+        console.log("[basketMicroservice][getBasket] => (error):", error);
+        throw error;
+    }
+}
+
+const createBasket = async(event) => {
+    console.log("[basketMicroservice][createBasket] => (event):", event);
+    console.log("[basketMicroservice][createBasket] => (process.env.DYNAMODB_TABLE_NAME):", process.env.DYNAMODB_TABLE_NAME);
+
+    try {
+        console.log("[basketMicroservice][createBasket] => (event.body):", event.body);
+        const basketRequest = JSON.parse(event.body);
+        console.log("[basketMicroservice][createBasket] => (basketRequest):", basketRequest);
+
+        const params = {
+            TableName: process.env.DYNAMODB_TABLE_NAME,
+            Item: marshall( basketRequest || {} )
+        }
+        console.log("[basketMicroservice][createBasket] => (params):", params);
+
+        const createResult = await ddbClient.send(new PutItemCommand(params));
+        console.log("[basketMicroservice][createBasket] => (createResult):", createResult);
+
+        return createResult;
+
+    } catch (error) {
+		console.log("[basketMicroservice][createBasket] => (error):", error);
+        throw error;
+    }
 }
