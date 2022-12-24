@@ -7,18 +7,21 @@ import { join } from "path";
 interface SwnMicroservicesProps {
     productTable: ITable;
     basketTable: ITable;
+    orderTable: ITable;
 }
 
 export class SwnMicroservices extends Construct {
 
     public readonly productMicroservice: NodejsFunction;
     public readonly basketMicroservice: NodejsFunction;
+    public readonly orderMicroservice: NodejsFunction;
 
     constructor(scope: Construct, id: string, props: SwnMicroservicesProps) {
         super(scope, id);
 
          this.productMicroservice = this.createProductFunction(props.productTable);
          this.basketMicroservice = this.createBasketFunction(props.basketTable);
+         this.orderMicroservice = this.createOrderFunction(props.orderTable);
     }
 
     private createProductFunction(productTable: ITable) : NodejsFunction {
@@ -81,5 +84,37 @@ export class SwnMicroservices extends Construct {
         basketTable.grantReadWriteData(basketFunction);
 
         return basketFunction;
+    }
+
+    private createOrderFunction(orderTable: ITable) : NodejsFunction {
+        //////////////////////////////////////////////////
+        // ORDER FUNCTION PROPERTIES
+        //////////////////////////////////////////////////
+        const orderFunctionProps: NodejsFunctionProps = {
+            bundling: {
+            externalModules: ['aws-sdk']
+            },
+            environment: {
+            PRIMARY_KEY: 'userName',
+            SORT_KEY: "orderDate",
+            DYNAMODB_TABLE_NAME: orderTable.tableName
+            },
+            runtime: Runtime.NODEJS_16_X
+        }
+
+        ///////////////////////////////////////////////////////////////////////////
+        // ORDER FUNCTION
+        ///////////////////////////////////////////////////////////////////////////
+        const orderFunction = new NodejsFunction(this, 'orderLambdaFunction', {
+            entry: join(__dirname, '/../src/order/index.js'),
+            ...orderFunctionProps,
+        });
+
+        ///////////////////////////////////////////////////////////////////////////
+        // GRANT READ-WRITE PRIVELEGES TO ORDER FUNCTION
+        ///////////////////////////////////////////////////////////////////////////
+        orderTable.grantReadWriteData(orderFunction);
+
+        return orderFunction;
     }
 }

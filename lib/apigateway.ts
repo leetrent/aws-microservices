@@ -5,6 +5,7 @@ import { Construct } from "constructs";
 interface SwnApiGatewayProps {
     productMicroservice: IFunction;
     basketMicroservice: IFunction;
+    orderMicroservice: IFunction;
 }
 export class SwnApiGateway extends Construct {
     constructor(scope: Construct, id: string, props: SwnApiGatewayProps) {
@@ -12,14 +13,16 @@ export class SwnApiGateway extends Construct {
 
         this.createProductApi(props.productMicroservice);
         this.createBasketApi(props.basketMicroservice);
+        this.createOrderApi(props.orderMicroservice);
     }
 
     private createProductApi(productMicroservice: IFunction) {
+
         ///////////////////////////////////////////////////////////////////////////
         // PRODUCT API GATEWAY
         ///////////////////////////////////////////////////////////////////////////
         const productApi = new LambdaRestApi(this, "productApi", {
-            restApiName: "Product Service",
+            restApiName: "Product API Service",
             handler: productMicroservice,
             proxy: false
         });
@@ -42,11 +45,12 @@ export class SwnApiGateway extends Construct {
     }
 
     private createBasketApi(basketMicroservice: IFunction) {
+
         ///////////////////////////////////////////////////////////////////////////
         // BASKET API GATEWAY
         ///////////////////////////////////////////////////////////////////////////
         const basketApi = new LambdaRestApi(this, "basketApi", {
-            restApiName: "Basket Service",
+            restApiName: "Basket API Service",
             handler: basketMicroservice,
             proxy: false
         });      
@@ -68,5 +72,24 @@ export class SwnApiGateway extends Construct {
         // POST /basket/checkout
         basketCheckoutResource.addMethod("POST");
         // expected request payload : {userName : swn }
+    }
+
+    private createOrderApi(orderMicroservice: IFunction) {
+        ///////////////////////////////////////////////////////////////////////////
+        // ORDER API GATEWAY
+        ///////////////////////////////////////////////////////////////////////////
+        const orderApi = new LambdaRestApi(this, "orderApi", {
+            restApiName: "Order API Service",
+            handler: orderMicroservice,
+            proxy: false
+        });
+
+        const order = orderApi.root.addResource("order");
+        order.addMethod("GET");
+
+        const singleOrder = order.addResource("{userName}");
+        singleOrder.addMethod("GET");
+
+        return singleOrder;
     }
 }
