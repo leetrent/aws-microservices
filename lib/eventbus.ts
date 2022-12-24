@@ -22,7 +22,7 @@ export class SwnEventBus extends Construct {
             enabled: true,
             description: "Basket/shopping cart checkout use case",
             eventPattern: {
-              source: ["comp.swn/basket.checkoutbasket"],
+              source: ["com.swn.basket.checkoutbasket"],
               detailType: ["CheckoutBasket"]
             },
             ruleName: "CheckoutBasketRule"
