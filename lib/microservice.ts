@@ -64,8 +64,11 @@ export class SwnMicroservices extends Construct {
             externalModules: ['aws-sdk']
             },
             environment: {
-            PRIMARY_KEY: 'userName',
-            DYNAMODB_TABLE_NAME: basketTable.tableName
+                PRIMARY_KEY: 'userName',
+                DYNAMODB_TABLE_NAME: basketTable.tableName,
+                EVENT_SOURCE: "com.swn.basket.checkoutbasket",
+                EVENT_DETAILTYPE: "CheckoutBasket",
+                EVENT_BUSNAME: "SenEventBus"
             },
             runtime: Runtime.NODEJS_16_X
         }

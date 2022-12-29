@@ -7,10 +7,13 @@
 // Notes:
 // npm install @aws-sdk/client-dynamodb
 // npm install @aws-sdk/util-dynamodb
+// npm install @aws-sdk/client-eventbridge
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 import { GetItemCommand, ScanCommand, PutItemCommand, DeleteItemCommand } from "@aws-sdk/client-dynamodb";
+import { PutEventsCommand } from "@aws-sdk/client-eventbridge";
 import { marshall, unmarshall } from "@aws-sdk/util-dynamodb";
-import {ddbClient} from "./ddbClient";
+import { ddbClient } from "./ddbClient";
+import { ebClient } from "./eventBridgeClient";
 
 exports.handler = async function(event) {
     console.log("[basketMicroservice] => (event):", event);
@@ -150,3 +153,97 @@ const deleteBasket = async(userName) => {
         throw error;
     }
 }
+ 
+const checkoutBasket = async(event) => {
+    const logSnippet = "[basketMicroservice][checkoutBasket] =>";
+    console.log(`${logSnippet} (event): ${event}`);
+
+    // 1. Get existing backet with items
+    // 2. Create an even json object with basket items
+    // 3. Publish event to eventbridge
+    // 4. Remove basket
+
+    const checkoutRequest = JSON.parse(event.body);
+    if ( checkoutRequest == null) {
+        throw new Error("Checkout request payload not provided.");
+    }
+
+    if ( checkoutRequest.userName == null) {
+        throw new Error("User name not provided.");
+    }
+
+    // 1. Get existing backet with items
+    const backet = await getBasket(checkoutRequest.userName)
+
+    // 2. Create an even json object with basket items
+    let checkoutPayload = prepareOrderPayload(checkoutRequest, basket);
+
+    // 3. Publish event to eventbridge
+    const publishedEvent = await publishCheckoutBasketEvent(checkoutPayload);
+
+    // 4. Remove basket
+    await deleteBasket(checkoutRequest.userName);
+}
+
+const prepareOrderPayload = (checkoutRequest, basket) => {
+    const logSnippet = "[basketMicroservice][prepareOrderPayload] =>";
+ 
+    if (basket == null || basket.items == null) {
+        throw new Error(console.log(`${logSnippet} Basket is NULL - cannot continue.`));
+    }
+
+    console.log(`${logSnippet} (basket): ${basket}`)
+
+    try {
+        ////////////////////////////////////////////////////////////////////
+        // CALCULATE TOTAL PRICE
+        ////////////////////////////////////////////////////////////////////
+        let totalPrice = 0;
+        //basket.items.forEach(item => totalPrice = totalPrice + item.price);
+        basket.items.forEach(item => totalPrice += item.price);
+        checkoutRequest.totalPrice = totalPrice;
+        console.log(`${logSnippet} (checkoutRequest): ${checkoutRequest}`);
+
+        ////////////////////////////////////////////////////////////////////
+        // COPY ALL basket PROPERTIES IN checkoutRequest OBJECT
+        ////////////////////////////////////////////////////////////////////
+        Object.assign(checkoutRequest, basket);
+        console.log(`${logSnippet} (checkoutRequest): ${checkoutRequest}`)
+
+        return checkoutRequest;
+
+    } catch(exc) {
+        console.log(`${logSnippet} (exc): ${exc}`)
+        throw exc;
+    }
+}
+
+const publishCheckoutBasketEvent = async (checkoutPayload) => {
+    const logSnippet = "[basketMicroservice][publishCheckoutBasketEvent] =>";
+    console.log(`${logSnippet} (checkoutPayload): ${checkoutPayload}`)
+
+    try {
+        const params = {
+            Entries: [
+                {
+                    Source: process.env.EVENT_SOURCE,
+                    Detail: JSON.stringify(checkoutPayload),
+                    DetailType: process.env.EVENT_DETAILTYPE,
+                    Resources: [],
+                    EventBusName: process.env.EVENT_BUSNAME
+                },
+            ],
+        };
+
+        const data = await ebClient.send(new PutEventsCommand(params));
+        console.log(`${logSnippet} (data): ${data}`);
+        return data;
+
+    } catch(esc) {
+        console.log(`${logSnippet} (exc): ${exc}`)
+        throw exc;       
+    }
+}
+
+
+
