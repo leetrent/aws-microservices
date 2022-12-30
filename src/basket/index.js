@@ -173,7 +173,7 @@ const checkoutBasket = async(event) => {
     }
 
     // 1. Get existing backet with items
-    const backet = await getBasket(checkoutRequest.userName)
+    const basket = await getBasket(checkoutRequest.userName)
 
     // 2. Create an even json object with basket items
     let checkoutPayload = prepareOrderPayload(checkoutRequest, basket);
@@ -239,7 +239,7 @@ const publishCheckoutBasketEvent = async (checkoutPayload) => {
         console.log(`${logSnippet} (data): ${data}`);
         return data;
 
-    } catch(esc) {
+    } catch(exc) {
         console.log(`${logSnippet} (exc): ${exc}`)
         throw exc;       
     }
