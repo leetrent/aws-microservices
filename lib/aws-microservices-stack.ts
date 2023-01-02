@@ -1,9 +1,15 @@
 import * as cdk from 'aws-cdk-lib';
+import { RemovalPolicy } from 'aws-cdk-lib';
+import { LambdaRestApi } from 'aws-cdk-lib/aws-apigateway';
+import { AttributeType, BillingMode, Table } from 'aws-cdk-lib/aws-dynamodb';
+import { Runtime } from 'aws-cdk-lib/aws-lambda';
+import { NodejsFunction, NodejsFunctionProps } from 'aws-cdk-lib/aws-lambda-nodejs';
 import { Construct } from 'constructs';
 import { SwnApiGateway } from './apigateway';
 import { SwnDatabase } from './database';
 import { SwnEventBus } from './eventbus';
 import { SwnMicroservices } from './microservice';
+import { join } from 'path';
 
 export class AwsMicroservicesStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -29,15 +35,5 @@ export class AwsMicroservicesStack extends cdk.Stack {
       publisherFunction: microservices.basketMicroservice,
       targetFunction: microservices.orderMicroservice
     });
-
   }
 }
-
-/*
-Outputs:
-AwsMicroservicesStack.ApiGatewaybasketApiEndpointEA878E69 = https://f3129icxya.execute-api.us-east-2.amazonaws.com/prod/
-AwsMicroservicesStack.ApiGatewayorderApiEndpointAA9C4874 = https://rapfishbkc.execute-api.us-east-2.amazonaws.com/prod/
-AwsMicroservicesStack.ApiGatewayproductApiEndpoint84A1AEAC = https://696rbokxl5.execute-api.us-east-2.amazonaws.com/prod/
-Stack ARN:
-arn:aws:cloudformation:us-east-2:270788751359:stack/AwsMicroservicesStack/dceef540-839f-11ed-a49c-06b5b3e25280
-*/

@@ -1,4 +1,3 @@
-.vs/
 bin/*.js
 lib/*.js
 !jest.config.js
