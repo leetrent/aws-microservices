@@ -1,9 +1,10 @@
 import { PutItemCommand } from "@aws-sdk/client-dynamodb";
 import { marshall } from "@aws-sdk/util-dynamodb";
+import { getNodeMajorVersion } from "typescript";
 import { ddbClient } from "./ddbClient";
 
 exports.handler = async function(event) {
-    console.log("request:", JSON.stringify(event, undefined, 2));
+    console.log("[OrderMicroservice][request]:", JSON.stringify(event, undefined, 2));
 
     const eventType = event["detail-type"];
     if (eventType !== undefined) {
@@ -17,12 +18,8 @@ const eventBridgeInvocation = async(event) => {
     await createOrder(event.detail)
 }
 
-const ApiGatewayInvocation = async(event) => {
-
-}
-
 const createOrder = async(backetCheckoutEvent) => {
-    const logSnippet = "[orderMicroservice][createOrder] =>";
+    const logSnippet = "[OrderMicroservice][createOrder] =>";
     try {
         const orderDate = new Date().toISOString();
         backetCheckoutEvent.orderDate = orderDate; 
@@ -41,5 +38,40 @@ const createOrder = async(backetCheckoutEvent) => {
     } catch (exc) {
         console.log(`${logSnippet} (Exception): ${exc}`);
         throw exc;
+    }
+}
+
+const ApiGatewayInvocation = async(event) => {
+    const logSnippet = "[OrderMicroservice][ApiGatewayInvocation] =>";
+    let body;
+    try {
+        switch(event.httpMethod) {
+            case "GET":
+                if (event.pathParameters != null) {
+                    body = await getOrder(event)
+                } else {
+                    body = await getAllOrders();
+                }
+                return {
+                    statusCode: 200,
+                    body: JSON.stringify({
+                        message: `${logSnippet} (Successfully completed operation): ${event.httpMethod}`,
+                        body: body
+                    })
+                };
+                console.log(`${logSnippet} (body): ${body}`);
+            default:
+                throw new Error(`${logSnippet} (Unsupported route): ${event.httpMethod}`);
+        }
+    } catch (exc) {
+        console.log(`${logSnippet} (Exception): ${exc}`);
+        return {
+            statusCode: 500,
+            body: JSON.stringify({
+                message: "Failed to perform HttpGet operation in order microservice",
+                errorMessage: exc.message,
+                errorStack: event.stack
+            })
+        };
     }
 }
