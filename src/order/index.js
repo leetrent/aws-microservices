@@ -1,6 +1,5 @@
-import { PutItemCommand } from "@aws-sdk/client-dynamodb";
-import { marshall } from "@aws-sdk/util-dynamodb";
-import { getNodeMajorVersion } from "typescript";
+import { PutItemCommand, QueryCommand, ScanCommand } from "@aws-sdk/client-dynamodb";
+import { marshall, unmarshall } from "@aws-sdk/util-dynamodb";
 import { ddbClient } from "./ddbClient";
 
 exports.handler = async function(event) {
@@ -73,5 +72,55 @@ const ApiGatewayInvocation = async(event) => {
                 errorStack: event.stack
             })
         };
+    }
+}
+
+const getOrder = async(event) => {
+    const logSnippet = "[OrderMicroservice][getOrder] =>";
+
+    try {
+        const userName = event.pathParameters.userName;
+        const orderDate = event.queryStringParameters.orderDate;   
+        console.log(`${logSnippet} (userName).: ${userName}`);
+        console.log(`${logSnippet} (orderDate): ${orderDate}`);
+    
+        const params = {
+            KeyConditionExpression: "userName = :userName and orderDate = :orderDate",
+            ExpressionAttributeValue: {
+                ":userName": {S: userName },
+                ":orderDate": { S: orderDate }
+            },
+            TableName: process.env.DYNAMODB_TABLE_NAME
+        };
+        console.log(`${logSnippet} (params): ${params}`);
+    
+        const { Items } = await ddbClient.send(new QueryCommand(params)); 
+        console.log(`${logSnippet} (Returned items): ${Items}`);
+
+        return Items.map( (item) => unmarshall(item) );
+
+    } catch(exc) {
+        console.log(`${logSnippet} (Exception): ${exc}`);
+        throw exc;
+    }
+}
+
+const getAllOrders = async() => {
+    const logSnippet = "[OrderMicroservice][getAllOrders] =>";
+
+    try {
+        const params = {
+            TableName: process.env.DYNAMODB_TABLE_NAME
+        };
+        console.log(`${logSnippet} (params): ${params}`);
+
+        const { Items } = await ddbClient.send( new ScanCommand(params));
+        console.log(`${logSnippet} (Returned items): ${Items}`);
+
+        return (Items) ? Items.map( (item) => unmarshall(item) ) : {};
+
+    } catch(exc) {
+        console.log(`${logSnippet} (Exception): ${exc}`);
+        throw exc;
     }
 }
