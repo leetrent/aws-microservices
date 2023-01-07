@@ -86,7 +86,7 @@ const getOrder = async(event) => {
     
         const params = {
             KeyConditionExpression: "userName = :userName and orderDate = :orderDate",
-            ExpressionAttributeValue: {
+            ExpressionAttributeValues: {
                 ":userName": {S: userName },
                 ":orderDate": { S: orderDate }
             },
