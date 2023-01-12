@@ -25,22 +25,39 @@ exports.handler = async function(event) {
     }
 } 
 
+// const sqsInvocation = async(event) => {
+//     const logSnippet = "[OrderMicroservice][sqsInvocation] =>";
+//     console.log(`${logSnippet} (event): ${event}`);
+//     console.log(`${logSnippet} (event.Records): ${event.Records}`);
+
+//     try {
+//         event.Records.forEach(async (record) => {
+//             console.log(`${logSnippet} (record): ${record}`);
+//             const checkoutEventRequest = JSON.parse(record.body);
+//             await createOrder(checkoutEventRequest.detail);
+//         });
+//     } catch (exc) {
+//         console.log(`${logSnippet} (Exception): ${exc}`);
+//         throw exc;
+//     }
+// }
+
 const sqsInvocation = async(event) => {
     const logSnippet = "[OrderMicroservice][sqsInvocation] =>";
     console.log(`${logSnippet} (event): ${event}`);
     console.log(`${logSnippet} (event.Records): ${event.Records}`);
 
-    try {
-        event.Records.forEach(async (record) => {
-            console.log(`${logSnippet} (record): ${record}`);
-            const checkoutEventRequest = JSON.parse(record.body);
-            await createOrder(checkoutEventRequest.detail);
-        });
-    } catch (exc) {
-        console.log(`${logSnippet} (Exception): ${exc}`);
-        throw exc;
+    for (const record of event.Records) {
+        console.log(`${logSnippet} (record): ${record}`);
+        const checkoutEventRequest = JSON.parse(record.body);
+        await createOrder(checkoutEventRequest.detail)
+        .then((createOrderResponse) => {
+            console.log(`${logSnippet} (createOrderResponse): ${createOrderResponse}`);
+        })
+        .catch((exc) => console.log(`${logSnippet} (Exception): ${exc}`));
     }
-}
+};
+
 const eventBridgeInvocation = async(event) => {
     await createOrder(event.detail)
 }
