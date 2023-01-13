@@ -2,16 +2,61 @@ import { PutItemCommand, QueryCommand, ScanCommand } from "@aws-sdk/client-dynam
 import { marshall, unmarshall } from "@aws-sdk/util-dynamodb";
 import { ddbClient } from "./ddbClient";
 
-exports.handler = async function(event) {
-    console.log("[OrderMicroservice][request]:", JSON.stringify(event, undefined, 2));
+// exports.handler = async function(event) {
+//     console.log("[OrderMicroservice][request]:", JSON.stringify(event, undefined, 2));
 
-    const eventType = event["detail-type"];
-    if (eventType !== undefined) {
+//     const eventType = event["detail-type"];
+//     if (eventType !== undefined) {
+//         await eventBridgeInvocation(event);
+//     } else {
+//         return await ApiGatewayInvocation(event);
+//     }
+// }
+
+exports.handler = async function(event) {
+    console.log("[OrderMicroservice][handler] => (event): ", JSON.stringify(event, undefined, 2));
+
+    if (event.Records != null) {
+        await sqsInvocation(event);
+    } else if (event["detail-type"] !== undefined) {
         await eventBridgeInvocation(event);
     } else {
         return await ApiGatewayInvocation(event);
     }
-}
+} 
+
+// const sqsInvocation = async(event) => {
+//     const logSnippet = "[OrderMicroservice][sqsInvocation] =>";
+//     console.log(`${logSnippet} (event): ${event}`);
+//     console.log(`${logSnippet} (event.Records): ${event.Records}`);
+
+//     try {
+//         event.Records.forEach(async (record) => {
+//             console.log(`${logSnippet} (record): ${record}`);
+//             const checkoutEventRequest = JSON.parse(record.body);
+//             await createOrder(checkoutEventRequest.detail);
+//         });
+//     } catch (exc) {
+//         console.log(`${logSnippet} (Exception): ${exc}`);
+//         throw exc;
+//     }
+// }
+
+const sqsInvocation = async(event) => {
+    const logSnippet = "[OrderMicroservice][sqsInvocation] =>";
+    console.log(`${logSnippet} (event): ${event}`);
+    console.log(`${logSnippet} (event.Records): ${event.Records}`);
+
+    for (const record of event.Records) {
+        console.log(`${logSnippet} (record): ${record}`);
+        const checkoutEventRequest = JSON.parse(record.body);
+        await createOrder(checkoutEventRequest.detail)
+        .then((createOrderResponse) => {
+            console.log(`${logSnippet} (createOrderResponse): ${createOrderResponse}`);
+        })
+        .catch((exc) => console.log(`${logSnippet} (Exception): ${exc}`));
+    }
+};
 
 const eventBridgeInvocation = async(event) => {
     await createOrder(event.detail)
